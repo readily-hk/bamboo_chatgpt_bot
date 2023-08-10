@@ -1,0 +1,21 @@
+FROM python:3.8-slim
+
+RUN setx /M PATH "%PATH%;C:\Python\Python38\Scripts" && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    python3-pip \
+    build-essential \
+    python3-venv \
+    ffmpeg \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install -U pip && pip3 install -U wheel && pip3 install -U setuptools==59.5.0
+
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt && del /q /f /s /tmp\requirements.txt
+
+COPY . /code
+WORKDIR /code
+
+CMD ["cmd", "/k"]

@@ -128,7 +128,7 @@ class ChatGPT:
                 prompt += f"Assistant: {dialog_message['bot']}\n"
 
         # current message
-        prompt += f"User: {message}\n"
+         += f"User: {message}\n"
         prompt += "Assistant: "
 
         return prompt

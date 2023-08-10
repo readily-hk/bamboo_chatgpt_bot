@@ -21,6 +21,8 @@ class Database:
         else:
             if raise_exception:
                 raise ValueError(f"User {user_id} does not exist")
+                # print("Does not exist bruh")
+                # return False
             else:
                 return False
 
@@ -32,57 +34,65 @@ class Database:
         first_name: str = "",
         last_name: str = "",
     ):
-        user_dict = {
-            "_id": user_id,
-            "chat_id": chat_id,
+        try:
+            user_dict = {
+                "_id": user_id,
+                "chat_id": chat_id,
 
-            "username": username,
-            "first_name": first_name,
-            "last_name": last_name,
+                "username": username,
+                "first_name": first_name,
+                "last_name": last_name,
 
-            "last_interaction": datetime.now(),
-            "first_seen": datetime.now(),
+                "last_interaction": datetime.now(),
+                "first_seen": datetime.now(),
 
-            "current_dialog_id": None,
-            "current_chat_mode": "assistant",
-            "current_model": config.models["available_text_models"][0],
+                "current_dialog_id": None,
+                "current_chat_mode": "assistant",
+                "current_model": config.models["available_text_models"][0],
 
-            "n_used_tokens": {},
+                "n_used_tokens": {},
 
-            "n_generated_images": 0,
-            "n_transcribed_seconds": 0.0  # voice message transcription
-        }
+                "n_generated_images": 0,
+                "n_transcribed_seconds": 0.0  # voice message transcription
+            }
 
-        if not self.check_if_user_exists(user_id):
-            self.user_collection.insert_one(user_dict)
+            if not self.check_if_user_exists(user_id):
+                self.user_collection.insert_one(user_dict)
+        except Exception as e:
+            print("An error occured:", str(e))
 
     def start_new_dialog(self, user_id: int):
-        self.check_if_user_exists(user_id, raise_exception=True)
+        try:
+            self.check_if_user_exists(user_id, raise_exception=True)
 
-        dialog_id = str(uuid.uuid4())
-        dialog_dict = {
-            "_id": dialog_id,
-            "user_id": user_id,
-            "chat_mode": self.get_user_attribute(user_id, "current_chat_mode"),
-            "start_time": datetime.now(),
-            "model": self.get_user_attribute(user_id, "current_model"),
-            "messages": []
-        }
+            dialog_id = str(uuid.uuid4())
+            dialog_dict = {
+                "_id": dialog_id,
+                "user_id": user_id,
+                "chat_mode": self.get_user_attribute(user_id, "current_chat_mode"),
+                "start_time": datetime.now(),
+                "model": self.get_user_attribute(user_id, "current_model"),
+                "messages": []
+            }
 
-        # add new dialog
-        self.dialog_collection.insert_one(dialog_dict)
+            # add new dialog
+            self.dialog_collection.insert_one(dialog_dict)
 
-        # update user's current dialog
-        self.user_collection.update_one(
-            {"_id": user_id},
-            {"$set": {"current_dialog_id": dialog_id}}
-        )
+            # update user's current dialog
+            self.user_collection.update_one(
+                {"_id": user_id},
+                {"$set": {"current_dialog_id": dialog_id}}
+            )
 
-        return dialog_id
+            return dialog_id
+        except Exception as e:
+            print("An error occured:", str(e))
 
     def get_user_attribute(self, user_id: int, key: str):
         self.check_if_user_exists(user_id, raise_exception=True)
         user_dict = self.user_collection.find_one({"_id": user_id})
+        if user_dict is None:
+            return None
 
         if key not in user_dict:
             return None
@@ -90,8 +100,12 @@ class Database:
         return user_dict[key]
 
     def set_user_attribute(self, user_id: int, key: str, value: Any):
-        self.check_if_user_exists(user_id, raise_exception=True)
-        self.user_collection.update_one({"_id": user_id}, {"$set": {key: value}})
+        try:
+            self.check_if_user_exists(user_id, raise_exception=True)
+            self.user_collection.update_one(
+                {"_id": user_id}, {"$set": {key: value}})
+        except Exception as e:
+            print("An error occured:", str(e))
 
     def update_n_used_tokens(self, user_id: int, model: str, n_input_tokens: int, n_output_tokens: int):
         n_used_tokens_dict = self.get_user_attribute(user_id, "n_used_tokens")
@@ -113,7 +127,8 @@ class Database:
         if dialog_id is None:
             dialog_id = self.get_user_attribute(user_id, "current_dialog_id")
 
-        dialog_dict = self.dialog_collection.find_one({"_id": dialog_id, "user_id": user_id})
+        dialog_dict = self.dialog_collection.find_one(
+            {"_id": dialog_id, "user_id": user_id})
         return dialog_dict["messages"]
 
     def set_dialog_messages(self, user_id: int, dialog_messages: list, dialog_id: Optional[str] = None):

@@ -34,5 +34,6 @@ services:
       - ME_CONFIG_MONGODB_AUTH_DATABASE=chatgpt_telegram_bot
       - ME_CONFIG_BASICAUTH_USERNAME=${MONGO_EXPRESS_USERNAME:-username}
       - ME_CONFIG_BASICAUTH_PASSWORD=${MONGO_EXPRESS_PASSWORD:-password}
+      - ME_CONFIG_MONGODB_USEUNIFIEDTOPOLOGY=true 
     depends_on:
       - mongo
